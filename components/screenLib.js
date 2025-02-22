@@ -12,7 +12,7 @@ class SCREEN {
     this.config = config
     this.sendSocketNotification = callback
     if (this.config.debug) log = (...args) => { console.log("[MMM-Pir] [LIB] [SCREEN]", ...args) }
-    this.PathScript = path.dirname(require.resolve('../package.json'))+"/scripts"
+    this.PathScript = path.dirname(require.resolve('../package.json')) + "/scripts"
     this.interval = null
     this.default = {
       delay: 5 * 60 * 1000,
@@ -36,8 +36,8 @@ class SCREEN {
       forceOnStart: true
     }
 
-    this.xrandrRoation = [ "normal", "left", "right", "inverted" ]
-    this.wrandrRoation = [ "normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270" ]
+    this.xrandrRoation = ["normal", "left", "right", "inverted"]
+    this.wrandrRoation = ["normal", "90", "180", "270", "flipped", "flipped-90", "flipped-180", "flipped-270"]
 
     if (this.config.turnOffDisplay) {
       switch (this.config.mode) {
@@ -86,16 +86,19 @@ class SCREEN {
             this.screen.wrandrRotation = this.config.wrandrForceRotation
           }
           break
+        case 11:
+          console.log("[MMM-Pir] [LIB] [SCREEN] Mode 11: Hybrid (GPIO OFF / CEC ON)")
+          break
         default:
-          this.logError("Unknow Mode Set to 0 (Disabled)")
-          this.sendSocketNotification("ERROR", "[MMM-Pir] Unknow Mode (" + this.config.mode + ") Set to 0 (Disabled)")
+          this.logError("Unknown Mode Set to 0 (Disabled)")
+          this.sendSocketNotification("ERROR", "[MMM-Pir] Unknown Mode (" + this.config.mode + ") Set to 0 (Disabled)")
           this.config.mode = 0
           break
       }
     }
   }
 
-  activate () {
+  activate() {
     if (!this.config.turnOffDisplay && !this.config.ecoMode) return log("Disabled.")
     process.on('exit', (code) => {
       if (this.config.turnOffDisplay && this.config.mode) this.setPowerDisplay(true)
@@ -105,7 +108,7 @@ class SCREEN {
     this.start()
   }
 
-  start (restart) {
+  start(restart) {
     if (this.screen.locked || this.screen.running || (!this.config.turnOffDisplay && !this.config.ecoMode)) return
     if (!restart) log("Start.")
     else log("Restart.")
@@ -120,7 +123,7 @@ class SCREEN {
     clearInterval(this.interval)
     this.interval = null
     this.counter = this.config.delay
-    this.interval = setInterval( ()=> {
+    this.interval = setInterval(() => {
       this.screen.running = true
 
       if (this.config.displayCounter) {
@@ -128,7 +131,7 @@ class SCREEN {
         if (this.config.dev) log("Counter:", moment(new Date(this.counter)).format("mm:ss"))
       }
       if (this.config.displayBar) {
-        this.sendSocketNotification("SCREEN_BAR", this.config.delay - this.counter )
+        this.sendSocketNotification("SCREEN_BAR", this.config.delay - this.counter)
       }
       if (this.counter <= 0) {
         clearInterval(this.interval)
@@ -148,7 +151,7 @@ class SCREEN {
     }, 1000)
   }
 
-  stop () {
+  stop() {
     if (this.screen.locked) return
 
     if (!this.screen.power) {
@@ -195,35 +198,35 @@ class SCREEN {
     this.start()
   }
 
-  forceEnd () {
+  forceEnd() {
     this.counter = 0
   }
 
-  wantedPowerDisplay (wanted) {
+  wantedPowerDisplay(wanted) {
     var actual = false
     switch (this.config.mode) {
       case 0:
-      /** disabled **/
+        /** disabled **/
         log("Disabled mode")
         break
       case 1:
-      /** vcgencmd **/
-        exec("/usr/bin/vcgencmd display_power", (err, stdout, stderr)=> {
+        /** vcgencmd **/
+        exec("/usr/bin/vcgencmd display_power", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)
             this.sendSocketNotification("ERROR", "[SCREEN] vcgencmd command error (mode: " + this.config.mode + ")")
           }
           else {
             var displaySh = stdout.trim()
-            actual = Boolean(Number(displaySh.substr(displaySh.length -1)))
-            this.resultDisplay(actual,wanted)
+            actual = Boolean(Number(displaySh.substr(displaySh.length - 1)))
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 2:
-      /** dpms rpi**/
+        /** dpms rpi**/
         var actual = false
-        exec("DISPLAY=:0 xset q | grep Monitor", (err, stdout, stderr)=> {
+        exec("DISPLAY=:0 xset q | grep Monitor", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)
             this.sendSocketNotification("ERROR", "[SCREEN] dpms command error (mode: " + this.config.mode + ")")
@@ -232,13 +235,13 @@ class SCREEN {
             let responseSh = stdout.trim()
             var displaySh = responseSh.split(" ")[2]
             if (displaySh == "On") actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 3:
-      /** tvservice **/
-        exec("tvservice -s | grep Hz", (err, stdout, stderr)=> {
+        /** tvservice **/
+        exec("tvservice -s | grep Hz", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)
             this.sendSocketNotification("ERROR", "[SCREEN] tvservice command error (mode: " + this.config.mode + ")")
@@ -246,13 +249,13 @@ class SCREEN {
           else {
             let responseSh = stdout.trim()
             if (responseSh) actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 4:
-      /** CEC **/
-        exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr)=> {
+        /** CEC **/
+        exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)
             this.logError("HDMI CEC Error: " + stdout)
@@ -262,13 +265,13 @@ class SCREEN {
             var displaySh = responseSh.split("\n")[1].split(" ")[2]
             if (displaySh == "on") actual = true
             if (displaySh == "unknown") log("HDMI CEC unknow state")
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 5:
-      /** dmps linux **/
-        exec("xset q | grep Monitor", (err, stdout, stderr)=> {
+        /** dmps linux **/
+        exec("xset q | grep Monitor", (err, stdout, stderr) => {
           if (err) {
             this.logError("[Display Error] " + err)
             this.sendSocketNotification("ERROR", "[SCREEN] dpms linux command error (mode: " + this.config.mode + ")")
@@ -277,13 +280,13 @@ class SCREEN {
             let responseSh = stdout.trim()
             var displaySh = responseSh.split(" ")[2]
             if (displaySh == "On") actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 6:
-      /** python script **/
-        exec("python monitor.py -s -g="+this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr)=> {
+        /** python script **/
+        exec("python monitor.py -s -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
           if (err) {
             this.logError("[Display Error] " + err)
             this.sendSocketNotification("ERROR", "[SCREEN] python relay script error (mode: " + this.config.mode + ")")
@@ -292,13 +295,13 @@ class SCREEN {
             let responsePy = stdout.trim()
             log("Response PY -- Check State: " + responsePy)
             if (responsePy == 1) actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 7:
-      /** python script reverse**/
-        exec("python monitor.py -s -g="+this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr)=> {
+        /** python script reverse**/
+        exec("python monitor.py -s -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
           if (err) {
             this.logError("[Display Error] " + err)
             this.sendSocketNotification("ERROR", "[SCREEN] python relay script error (mode: " + this.config.mode + ")")
@@ -307,13 +310,13 @@ class SCREEN {
             let responsePy = stdout.trim()
             log("Response PY -- Check State (reverse): " + responsePy)
             if (responsePy == 0) actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 8:
-      /** ddcutil **/
-        exec("ddcutil getvcp d6", (err, stdout, stderr)=> {
+        /** ddcutil **/
+        exec("ddcutil getvcp d6", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)
             this.sendSocketNotification("ERROR", "[SCREEN] ddcutil command error (mode: " + this.config.mode + ")")
@@ -322,60 +325,93 @@ class SCREEN {
             let responseSh = stdout.trim()
             var displaySh = responseSh.split("(sl=")[1]
             if (displaySh == "0x01)") actual = true
-            this.resultDisplay(actual,wanted)
+            this.resultDisplay(actual, wanted)
           }
         })
         break
       case 9:
-      /** xrandr on primary display **/
+        /** xrandr on primary display **/
         exec("xrandr | grep 'connected primary'",
-            (err, stdout, stderr)=> {
-                if (err) {
-                    this.logError(err)
-                    this.sendSocketNotification("ERROR", `[SCREEN] xrandr command error (mode: ${this.config.mode})`)
-                }
-                else {
-                    let responseSh = stdout.trim()
-                    var power = "on"
-                    this.screen.hdmiPort = responseSh.split(" ")[0]
-                    if (responseSh.split(" ")[3] == "(normal") power = "off"
-                    if (power == "on") actual = true
-                    log(`[MODE 9] Monitor on ${this.screen.hdmiPort} is ${power}`)
-                    this.resultDisplay(actual,wanted)
-                }
+          (err, stdout, stderr) => {
+            if (err) {
+              this.logError(err)
+              this.sendSocketNotification("ERROR", `[SCREEN] xrandr command error (mode: ${this.config.mode})`)
             }
+            else {
+              let responseSh = stdout.trim()
+              var power = "on"
+              this.screen.hdmiPort = responseSh.split(" ")[0]
+              if (responseSh.split(" ")[3] == "(normal") power = "off"
+              if (power == "on") actual = true
+              log(`[MODE 9] Monitor on ${this.screen.hdmiPort} is ${power}`)
+              this.resultDisplay(actual, wanted)
+            }
+          }
         )
         break
       case 10:
-      /** wl-randr on primary display **/
+        /** wl-randr on primary display **/
         exec("WAYLAND_DISPLAY=wayland-1 wlr-randr | grep 'Enabled'",
-            (err, stdout, stderr)=> {
-                if (err) {
+          (err, stdout, stderr) => {
+            if (err) {
+              this.logError(err)
+              this.sendSocketNotification("ERROR", `[SCREEN] wlr-randr command error (mode: ${this.config.mode})`)
+            } else {
+              let responseSh = stdout.trim()
+              if (responseSh.split(" ")[1] == "yes") actual = true
+              exec("WAYLAND_DISPLAY=wayland-1 wlr-randr",
+                (err, stdout, stderr) => {
+                  if (err) {
                     this.logError(err)
-                    this.sendSocketNotification("ERROR", `[SCREEN] wlr-randr command error (mode: ${this.config.mode})`)
-                } else {
-                  let responseSh = stdout.trim()
-                  if (responseSh.split(" ")[1] == "yes") actual = true
-                  exec("WAYLAND_DISPLAY=wayland-1 wlr-randr",
-                    (err, stdout, stderr) => {
-                      if (err) {
-                        this.logError(err)
-                        this.sendSocketNotification("ERROR", `[SCREEN] wlr-randr scan screen command error (mode: ${this.config.mode})`)
-                      } else {
-                        let wResponse = stdout.trim()
-                        this.screen.hdmiPort = wResponse.split(" ")[0]
-                        log(`[MODE 10] Monitor on ${this.screen.hdmiPort} is ${actual}`)
-                        this.resultDisplay(actual,wanted)
-                      }
-                    })
-                }
+                    this.sendSocketNotification("ERROR", `[SCREEN] wlr-randr scan screen command error (mode: ${this.config.mode})`)
+                  } else {
+                    let wResponse = stdout.trim()
+                    this.screen.hdmiPort = wResponse.split(" ")[0]
+                    log(`[MODE 10] Monitor on ${this.screen.hdmiPort} is ${actual}`)
+                    this.resultDisplay(actual, wanted)
+                  }
+                })
             }
+          }
         )
+        break
+      case 11:
+        if (wanted) {
+          // For ON state check, use HDMI CEC
+          exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr) => {
+            if (err) {
+              this.logError(err)
+              this.logError("HDMI CEC Error: " + stdout)
+              this.sendSocketNotification("ERROR", "[SCREEN] HDMI CEC command error (mode: 11)")
+            } else {
+              let responseSh = stdout.trim()
+              var displaySh = responseSh.split("\n")[1].split(" ")[2]
+              if (displaySh == "on") actual = true
+              if (displaySh == "unknown") log("HDMI CEC unknown state")
+              this.resultDisplay(actual, wanted)
+            }
+          })
+        } else {
+          // For OFF state, we'll use CEC state since GPIO is just a toggle
+          exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr) => {
+            if (err) {
+              this.logError(err)
+              this.logError("HDMI CEC Error: " + stdout)
+              this.sendSocketNotification("ERROR", "[SCREEN] HDMI CEC command error (mode: 11)")
+            } else {
+              let responseSh = stdout.trim()
+              var displaySh = responseSh.split("\n")[1].split(" ")[2]
+              if (displaySh == "on") actual = true
+              if (displaySh == "unknown") log("HDMI CEC unknown state")
+              this.resultDisplay(actual, wanted)
+            }
+          })
+        }
         break
     }
   }
 
-  resultDisplay (actual,wanted) {
+  resultDisplay(actual, wanted) {
     if (this.screen.forceOnStart) {
       log("Display: Force On Start")
       this.setPowerDisplay(true)
@@ -388,7 +424,7 @@ class SCREEN {
     }
   }
 
-  async setPowerDisplay (set) {
+  async setPowerDisplay(set) {
     log("Display " + (set ? "ON." : "OFF."))
     this.screen.power = set
     this.SendScreenPowerState()
@@ -416,20 +452,20 @@ class SCREEN {
         break
       case 6:
         if (set)
-          exec("python monitor.py -r=1 -g="+this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr)=> {
+          exec("python monitor.py -r=1 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
             if (err) logError(err)
             else log("Relay is " + stdout.trim())
           })
         else
           if (this.config.clearGpioValue) {
-            exec("python monitor.py -r=0 -c -g="+this.config.gpio, {cwd: this.PathScript},(err, stdout, stderr)=> {
+            exec("python monitor.py -r=0 -c -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
               if (err) logError(err)
               else {
                 log("Relay is " + stdout.trim())
               }
             })
           } else {
-            exec("python monitor.py -r=0 -g="+this.config.gpio, {cwd: this.PathScript},(err, stdout, stderr)=> {
+            exec("python monitor.py -r=0 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
               if (err) logError(err)
               else {
                 log("Relay is " + stdout.trim())
@@ -440,14 +476,14 @@ class SCREEN {
       case 7:
         if (set) {
           if (this.config.clearGpioValue) {
-            exec("python monitor.py -r=0 -c -g="+this.config.gpio, {cwd: this.PathScript},(err, stdout, stderr)=> {
+            exec("python monitor.py -r=0 -c -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
               if (err) logError(err)
               else {
                 log("Relay is " + stdout.trim())
               }
             })
           } else {
-            exec("python monitor.py -r=0 -g="+this.config.gpio, {cwd: this.PathScript},(err, stdout, stderr)=> {
+            exec("python monitor.py -r=0 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
               if (err) logError(err)
               else {
                 log("Relay is " + stdout.trim())
@@ -455,7 +491,7 @@ class SCREEN {
             })
           }
         } else {
-          exec("python monitor.py -r=1 -g="+this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr)=> {
+          exec("python monitor.py -r=1 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
             if (err) logError(err)
             else log("Relay is " + stdout.trim())
           })
@@ -472,6 +508,18 @@ class SCREEN {
       case 10:
         if (set) exec(`WAYLAND_DISPLAY=wayland-1 wlr-randr --output ${this.screen.hdmiPort} --on --transform ${this.screen.wrandrRotation}`)
         else exec(`WAYLAND_DISPLAY=wayland-1 wlr-randr --output ${this.screen.hdmiPort} --off`)
+        break
+      case 11:
+        if (set) {
+          // Turn ON using HDMI CEC
+          exec("echo 'on 0' | cec-client -s")
+        } else {
+          // Toggle GPIO to turn off display
+          exec("python monitor.py -t -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
+            if (err) this.logError(err)
+            else log("Relay toggled: " + stdout.trim())
+          })
+        }
         break
     }
   }

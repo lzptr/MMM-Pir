@@ -187,16 +187,6 @@ fi
 Installer_success "Done"
 echo
 
-if [[ $rebuild == 1 ]]; then
-  Installer_info "Rebuild MagicMirror..."
-  MagicMirror-rebuild 2>/dev/null || {
-    Installer_error "Rebuild Failed"
-    exit 255
-  }
-  Installer_success "Done"
-  echo
-fi
-
 # module name
 Installer_module="$(grep -Eo '\"name\"[^,]*' ./package.json | grep -Eo '[^:]*$' | awk  -F'\"' '{print $2}')"
 

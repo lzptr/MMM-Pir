@@ -10,7 +10,7 @@ async function init(that) {
 
 async function parse(that) {
   if (that.config.debug) log = (...args) => { console.log("[MMM-Pir]", ...args) }
-  console.log("[MMM-Pir] Version:", require('../package.json').version, "rev:", require('../package.json').rev )
+  console.log("[MMM-Pir] Version:", require('../package.json').version, "rev:", require('../package.json').rev)
   let bugsounet = await _load.libraries(that)
   if (bugsounet) {
     console.error("[MMM-Pir] [DATA] Warning:", bugsounet, "needed library not loaded !")
@@ -20,23 +20,22 @@ async function parse(that) {
   }
   var callbacks = {
     "screen": (noti, params) => {
-      log("Screen Callback:", noti,params)
+      log("Screen Callback:", noti, params)
       that.sendSocketNotification(noti, params)
     },
     "pir": (noti, params) => {
-      log("Pir Callback:", noti,params)
+      log("Pir Callback:", noti, params)
       if (noti == "PIR_DETECTED") that.screen.wakeup()
       else that.sendSocketNotification(noti, params)
     }
   }
-  let pirConfig= {
-    libGpio: that.lib.onoff.Gpio,
+  let pirConfig = {
     debug: that.config.debug,
     gpio: that.config.pir_gpio,
     reverseValue: that.config.pir_reverseValue
   }
 
-  let screenConfig= {
+  let screenConfig = {
     delay: that.config.delay,
     turnOffDisplay: that.config.turnOffDisplay,
     ecoMode: that.config.ecoMode,

@@ -98,6 +98,51 @@ class SCREEN {
     }
   }
 
+  executeCECCommand(command) {
+    return new Promise((resolve, reject) => {
+      // Create a process for cec-client
+      const cec = spawn('cec-client', ['-s', '-d', '1'], {
+        shell: true,
+        env: { ...process.env, PATH: process.env.PATH }
+      });
+
+      let output = '';
+      let error = '';
+
+      // Write the command to stdin
+      cec.stdin.write(command + '\n');
+      cec.stdin.end();
+
+      cec.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+
+      cec.stderr.on('data', (data) => {
+        error += data.toString();
+      });
+
+      cec.on('close', (code) => {
+        if (code === 0) {
+          resolve(output);
+        } else {
+          reject(new Error(`CEC command failed with code ${code}: ${error}`));
+        }
+      });
+    });
+  }
+
+  async checkCECStatus() {
+    try {
+      const output = await this.executeCECCommand('pow 0');
+      this.log("CEC Output:", output);
+      return output.includes('power status: on');
+    } catch (err) {
+      this.logError("CEC Error:", err);
+      return false;
+    }
+  }
+
+
   activate() {
     if (!this.config.turnOffDisplay && !this.config.ecoMode) return log("Disabled.")
     process.on('exit', (code) => {
@@ -202,7 +247,7 @@ class SCREEN {
     this.counter = 0
   }
 
-  wantedPowerDisplay(wanted) {
+  async wantedPowerDisplay(wanted) {
     var actual = false
     switch (this.config.mode) {
       case 0:
@@ -255,19 +300,14 @@ class SCREEN {
         break
       case 4:
         /** CEC **/
-        exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr) => {
-          if (err) {
-            this.logError(err)
-            this.logError("HDMI CEC Error: " + stdout)
-            this.sendSocketNotification("ERROR", "[SCREEN] HDMI CEC command error (mode: " + this.config.mode + ")")
-          } else {
-            let responseSh = stdout.trim()
-            var displaySh = responseSh.split("\n")[1].split(" ")[2]
-            if (displaySh == "on") actual = true
-            if (displaySh == "unknown") log("HDMI CEC unknow state")
-            this.resultDisplay(actual, wanted)
-          }
-        })
+        try {
+          const isOn = await this.checkCECStatus();
+          actual = isOn;
+          this.resultDisplay(actual, wanted);
+        } catch (err) {
+          this.logError(err);
+          this.sendSocketNotification("ERROR", "[SCREEN] HDMI CEC command error (mode: " + this.config.mode + ")");
+        }
         break
       case 5:
         /** dmps linux **/
@@ -443,8 +483,15 @@ class SCREEN {
         else exec("tvservice -o")
         break
       case 4:
-        if (set) exec("echo 'on 0' | cec-client -s")
-        else exec("echo 'standby 0' | cec-client -s")
+        try {
+          if (set) {
+            await this.executeCECCommand('on 0');
+          } else {
+            await this.executeCECCommand('standby 0');
+          }
+        } catch (err) {
+          this.logError(err);
+        }
         break
       case 5:
         if (set) exec("xset dpms force on")

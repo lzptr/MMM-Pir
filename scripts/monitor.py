@@ -52,6 +52,9 @@ parser.add_argument("-c", "--clean", help="cleanup GPIO", action="store_true")
 parser.add_argument(
     "-s", "--state", help="query state of the GPIO and exit", action="store_true"
 )
+parser.add_argument(
+    "-m", "--monitor", help="monitor GPIO input state", action="store_true"
+)
 
 args = parser.parse_args(None if sys.argv[1:] else ["-h"])
 gpio = args.gpio
@@ -63,15 +66,36 @@ if args.verbose:
     print("Toggle: " + str(args.toggle))
     print("Cleanup: " + str(args.clean))
     print("State: " + str(args.state))
+    print("Monitor: " + str(args.monitor))
 
 # GPIO setup
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-GPIO.setup(gpio, GPIO.OUT)
+
+# Setup GPIO based on mode
+if args.monitor or args.state:
+    GPIO.setup(
+        gpio, GPIO.IN, pull_up_down=GPIO.PUD_DOWN
+    )  # Input mode for monitoring/state
+else:
+    GPIO.setup(gpio, GPIO.OUT)  # Output mode for relay control
 
 if args.state:
     print(str(GPIO.input(gpio)))
     exit()
+
+if args.monitor:
+    try:
+        if args.verbose:
+            print(f"Monitoring GPIO {gpio}...")
+        while True:
+            state = GPIO.input(gpio)
+            if state:
+                print("1")
+            time.sleep(0.1)  # Check every 100ms
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        exit()
 
 
 def monitor_on(pin):

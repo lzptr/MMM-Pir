@@ -58,12 +58,17 @@ class PIR {
     })
 
     // Start continuous monitoring
-    this.monitorProcess = exec(`python ${monitorPath} -v -m -g=${this.config.gpio}`, { cwd: this.PathScript })
+    this.monitorProcess = exec(`python ${monitorPath} -v -m -g ${this.config.gpio}`, {
+      cwd: this.PathScript,
+      detached: true,
+      shell: true
+    })
 
     // Handle stdout data
     this.monitorProcess.stdout.on('data', (data) => {
       const lines = data.toString().trim().split('\n')
       lines.forEach(line => {
+        this.log("Received data:", line) // Debug logging
         if (line === '1') {
           this.log("Motion detected on GPIO", this.config.gpio)
           this.callback("PIR_DETECTED")

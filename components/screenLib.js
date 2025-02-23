@@ -512,7 +512,7 @@ class SCREEN {
       case 11:
         if (set) {
           // Turn ON using HDMI CEC
-          exec("echo 'on 0' | cec-client -s")
+          exec("echo 'on 0' | cec-client -s -d 1")
         } else {
           // Toggle GPIO to turn off display
           exec("python monitor.py -t -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {

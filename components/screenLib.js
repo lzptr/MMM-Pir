@@ -72,11 +72,13 @@ class SCREEN {
   }
 
   activate() {
-    if (!this.config.turnOffDisplay && !this.config.ecoMode) {
-      log("Disabled.");
-      return;
-    }
-    this.start();
+    if (!this.config.turnOffDisplay && !this.config.ecoMode) return log("Disabled.")
+    process.on('exit', (code) => {
+      if (this.config.turnOffDisplay && this.config.mode) this.setPowerDisplay(true)
+      console.log('[MMM-Pir] [LIB] [SCREEN] See you soon !')
+      console.log('[MMM-Pir] [LIB] [SCREEN] @bugsounet')
+    })
+    this.start()
   }
 
   start(restart = false) {

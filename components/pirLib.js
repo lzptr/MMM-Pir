@@ -10,7 +10,7 @@ class PIR {
     this.callback = callback
     this.default = {
       debug: this.config.debug,
-      gpio: 21,
+      gpio: 14,
       reverseValue: false
     }
     this.config = Object.assign({}, this.default, this.config)

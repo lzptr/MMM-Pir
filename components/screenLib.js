@@ -252,6 +252,7 @@ class SCREEN {
         break
       case 4:
         /** CEC **/
+        log("Check monitor state")
         exec("echo 'pow 0' | cec-client -s -d 1", (err, stdout, stderr) => {
           if (err) {
             this.logError(err)

@@ -86,10 +86,12 @@ if args.monitor:
     try:
         if args.verbose:
             print(f"Monitoring GPIO {gpio}...")
+        previous_state = GPIO.input(gpio)  # Track previous state
         while True:
-            state = GPIO.input(gpio)
-            if state:
+            current_state = GPIO.input(gpio)
+            if current_state and not previous_state:  # Rising edge detected
                 print("1")
+            previous_state = current_state
             time.sleep(0.1)  # Check every 100ms
     except KeyboardInterrupt:
         GPIO.cleanup()

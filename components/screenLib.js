@@ -233,8 +233,8 @@ class SCREEN {
   }
 
   wakeup() {
-    if (this.screen.locked) return
-    this.reset()
+    if (this.screen.locked || this.screen.running) return;
+    this.reset();
   }
 
   lock() {

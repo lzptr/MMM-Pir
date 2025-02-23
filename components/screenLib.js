@@ -255,7 +255,7 @@ class SCREEN {
           break;
         case 2:
           /** dpms rpi**/
-          var actual = false
+          actual = false
           exec("DISPLAY=:0 xset q | grep Monitor", (err, stdout, stderr) => {
             if (err) {
               this.logError(err)

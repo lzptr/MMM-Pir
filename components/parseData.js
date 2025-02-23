@@ -4,8 +4,14 @@ var log = (...args) => { /* do nothing */ }
 
 async function init(that) {
   that.lib = { error: 0 }
-  that.pir = null
-  that.screen = null
+  if (that.pir) {
+    that.pir.stop()
+    that.pir = null
+  }
+  if (that.screen) {
+    that.screen.stop()
+    that.screen = null
+  }
 }
 
 async function parse(that) {

@@ -8,12 +8,23 @@ const parseData = require("./components/parseData.js")
 var log = (...args) => { /* do nothing */ }
 
 module.exports = NodeHelper.create({
-  start: function() {
+  start: function () {
     parseData.init(this)
   },
 
+  stop: function () {
+    if (this.pir) {
+      this.pir.stop()
+      this.pir = null
+    }
+    if (this.screen) {
+      this.screen.stop()
+      this.screen = null
+    }
+  },
+
   socketNotificationReceived: function (notification, payload) {
-    switch(notification) {
+    switch (notification) {
       case "INIT":
         this.config = payload
         parseData.parse(this)

@@ -57,18 +57,22 @@ class PIR {
       this.log("Initial state check:", stdout.trim())
     })
 
-    // Start continuous monitoring
-    this.monitorProcess = exec(`python ${monitorPath} -v -m -g ${this.config.gpio}`, {
+    // Start continuous monitoring with process group
+    this.monitorProcess = exec(`python ${monitorPath} -v -m -g=${this.config.gpio}`, {
       cwd: this.PathScript,
       detached: true,
       shell: true
     })
 
-    // Handle stdout data
+    // Handle stdout data with buffering
+    let buffer = '';
     this.monitorProcess.stdout.on('data', (data) => {
-      const lines = data.toString().trim().split('\n')
+      buffer += data.toString();
+      let lines = buffer.split('\n');
+      buffer = lines.pop(); // Keep the last partial line in the buffer
+
       lines.forEach(line => {
-        this.log("Received data:", line) // Debug logging
+        line = line.trim();
         if (line === '1') {
           this.log("Motion detected on GPIO", this.config.gpio)
           this.callback("PIR_DETECTED")
@@ -107,14 +111,19 @@ class PIR {
     this.running = false
 
     if (this.monitorProcess) {
-      // Kill the Python process
+      // Remove all listeners before killing the process
+      this.monitorProcess.stdout.removeAllListeners('data');
+      this.monitorProcess.stderr.removeAllListeners('data');
+      this.monitorProcess.removeAllListeners('close');
+      this.monitorProcess.removeAllListeners('error');
+
+      // Kill the Python process and its children
       try {
-        process.kill(-this.monitorProcess.pid)
+        process.kill(-this.monitorProcess.pid, 'SIGKILL');
       } catch (e) {
         this.log("Error killing process:", e)
       }
 
-      this.monitorProcess.removeAllListeners()
       this.monitorProcess = null
     }
 

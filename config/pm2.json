@@ -1,0 +1,11 @@
+{
+    "apps": [
+        {
+            "name": "MagicMirror",
+            "script": "server.js",
+            "node_args": [
+                "--max-old-space-size=512"
+            ]
+        }
+    ]
+}

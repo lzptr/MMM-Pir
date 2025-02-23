@@ -1,7 +1,6 @@
 /** PIR library **/
 /** bugsounet **/
 
-var log = (...args) => { /* do nothing */ }
 const exec = require('child_process').exec
 const path = require('path')
 
@@ -11,20 +10,25 @@ class PIR {
     this.callback = callback
     this.default = {
       debug: this.config.debug,
-      gpio: 14,  // Changed default to 14
+      gpio: 21,
       reverseValue: false
     }
     this.config = Object.assign({}, this.default, this.config)
-    if (this.config.debug) log = (...args) => { console.log("[MMM-Pir] [LIB] [PIR]", ...args) }
+    this.log = this.config.debug ? (...args) => { console.log("[MMM-Pir] [LIB] [PIR]", ...args) } : () => { }
     this.running = false
-    this.PathScript = path.dirname(require.resolve('../package.json')) + "/scripts"
-    log("Initialized with GPIO:", this.config.gpio)  // Debug log
+    this.monitorProcess = null
+    this.PathScript = path.join(path.dirname(require.resolve('../package.json')), "scripts")
+    this.log("Initialized with GPIO:", this.config.gpio)
     this.callback("PIR_INITIALIZED")
   }
 
   start() {
-    if (this.running) return
-    log("Start monitoring on GPIO", this.config.gpio)  // Debug log
+    if (this.running) {
+      this.log("Already running")
+      return
+    }
+
+    this.log("Start monitoring on GPIO", this.config.gpio)
     try {
       this._startStateMonitoring()
       this.callback("PIR_STARTED")
@@ -37,49 +41,88 @@ class PIR {
   }
 
   _startStateMonitoring() {
+    if (this.monitorProcess) {
+      this.stop()
+    }
+
     this.running = true
-    // Monitor GPIO state using Python script with debug
-    exec(`python monitor.py -v -s -g=${this.config.gpio}`, { cwd: this.PathScript }, (err, stdout, stderr) => {
+    const monitorPath = path.join(this.PathScript, "monitor.py")
+
+    // Initial state check
+    exec(`python ${monitorPath} -v -s -g=${this.config.gpio}`, { cwd: this.PathScript }, (err, stdout, stderr) => {
       if (err) {
         console.error("[MMM-Pir] [LIB] [PIR] Initial state check failed:", err)
         return
       }
-      log("Initial state check:", stdout.trim())
+      this.log("Initial state check:", stdout.trim())
     })
 
     // Start continuous monitoring
-    this.monitorProcess = exec(`python monitor.py -v -m -g=${this.config.gpio}`, { cwd: this.PathScript })
+    this.monitorProcess = exec(`python ${monitorPath} -v -m -g=${this.config.gpio}`, { cwd: this.PathScript })
 
+    // Handle stdout data
     this.monitorProcess.stdout.on('data', (data) => {
       const lines = data.toString().trim().split('\n')
       lines.forEach(line => {
         if (line === '1') {
-          log("Motion detected on GPIO", this.config.gpio)
+          this.log("Motion detected on GPIO", this.config.gpio)
           this.callback("PIR_DETECTED")
         }
       })
     })
 
+    // Handle stderr data
     this.monitorProcess.stderr.on('data', (data) => {
       console.error("[MMM-Pir] [LIB] [PIR] Error:", data.toString())
     })
 
+    // Handle process exit
     this.monitorProcess.on('close', (code) => {
-      if (code !== 0) {
+      if (code !== 0 && this.running) {
         console.error("[MMM-Pir] [LIB] [PIR] Monitor process exited with code", code)
+        // Attempt to restart if unexpected exit
+        setTimeout(() => {
+          if (this.running) {
+            this.log("Attempting to restart monitoring...")
+            this._startStateMonitoring()
+          }
+        }, 5000)
       }
+    })
+
+    // Handle process errors
+    this.monitorProcess.on('error', (err) => {
+      console.error("[MMM-Pir] [LIB] [PIR] Monitor process error:", err)
     })
   }
 
   stop() {
     if (!this.running) return
+
+    this.running = false
+
     if (this.monitorProcess) {
-      this.monitorProcess.kill()
+      // Kill the Python process
+      try {
+        process.kill(-this.monitorProcess.pid)
+      } catch (e) {
+        this.log("Error killing process:", e)
+      }
+
+      this.monitorProcess.removeAllListeners()
       this.monitorProcess = null
     }
-    this.running = false
+
+    // Execute cleanup script
+    const monitorPath = path.join(this.PathScript, "monitor.py")
+    exec(`python ${monitorPath} -c -g=${this.config.gpio}`, { cwd: this.PathScript }, (err) => {
+      if (err) {
+        console.error("[MMM-Pir] [LIB] [PIR] Cleanup failed:", err)
+      }
+    })
+
     this.callback("PIR_STOP")
-    log("Stop")
+    this.log("Stopped")
   }
 }
 

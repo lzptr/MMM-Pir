@@ -1,7 +1,7 @@
 /** Screen management **/
 /** bugsounet **/
 
-const exec = require('child_process').exec
+const { exec, spawn } = require('child_process')
 const process = require('process')
 const moment = require('moment')
 const path = require('path')

@@ -5,13 +5,12 @@ const { exec, spawn } = require('child_process')
 const process = require('process')
 const moment = require('moment')
 const path = require('path')
-var log = (...args) => { /* do nothing */ }
 
 class SCREEN {
   constructor(config, callback) {
     this.config = config
     this.sendSocketNotification = callback
-    if (this.config.debug) log = (...args) => { console.log("[MMM-Pir] [LIB] [SCREEN]", ...args) }
+    this.log = this.config.debug ? (...args) => { console.log("[MMM-Pir] [LIB] [SCREEN]", ...args) } : () => { }
     this.PathScript = path.dirname(require.resolve('../package.json')) + "/scripts"
     this.interval = null
     this.default = {
@@ -154,7 +153,7 @@ class SCREEN {
 
 
   activate() {
-    if (!this.config.turnOffDisplay && !this.config.ecoMode) return log("Disabled.")
+    if (!this.config.turnOffDisplay && !this.config.ecoMode) return this.log("Disabled.")
     process.on('exit', (code) => {
       if (this.config.turnOffDisplay && this.config.mode) this.setPowerDisplay(true)
       console.log('[MMM-Pir] [LIB] [SCREEN] See you soon !')
@@ -165,8 +164,8 @@ class SCREEN {
 
   start(restart) {
     if (this.screen.locked || this.screen.running || (!this.config.turnOffDisplay && !this.config.ecoMode)) return
-    if (!restart) log("Start.")
-    else log("Restart.")
+    if (!restart) this.log("Start.")
+    else this.log("Restart.")
     this.sendSocketNotification("SCREEN_PRESENCE", true)
     if (!this.screen.power) {
       if (this.config.turnOffDisplay && this.config.mode) this.wantedPowerDisplay(true)
@@ -183,7 +182,7 @@ class SCREEN {
 
       if (this.config.displayCounter) {
         this.sendSocketNotification("SCREEN_TIMER", moment(new Date(this.counter)).format("mm:ss"))
-        if (this.config.dev) log("Counter:", moment(new Date(this.counter)).format("mm:ss"))
+        if (this.config.dev) this.log("Counter:", moment(new Date(this.counter)).format("mm:ss"))
       }
       if (this.config.displayBar) {
         this.sendSocketNotification("SCREEN_BAR", this.config.delay - this.counter)
@@ -200,7 +199,7 @@ class SCREEN {
         }
         this.interval = null
         this.sendSocketNotification("SCREEN_PRESENCE", false)
-        log("Stops by counter.")
+        this.log("Stops by counter.")
       }
       this.counter -= 1000
     }, 1000)
@@ -221,7 +220,7 @@ class SCREEN {
     clearInterval(this.interval)
     this.interval = null
     this.screen.running = false
-    log("Stops.")
+    this.log("Stops.")
   }
 
   reset() {
@@ -230,7 +229,7 @@ class SCREEN {
     this.interval = null
     this.screen.running = false
     this.start(true)
-    this.log("Timer reset due to motion")
+    if (this.config.debug) console.log("[MMM-Pir] [LIB] [SCREEN] Timer reset due to motion")
   }
 
   wakeup() {
@@ -251,13 +250,13 @@ class SCREEN {
     clearInterval(this.interval)
     this.interval = null
     this.screen.running = false
-    log("Locked !")
+    this.log("Locked !")
   }
 
   unlock() {
     if (!this.screen.locked) return
     this.screen.locked = false
-    log("Unlocked !")
+    this.log("Unlocked !")
     this.start()
   }
 
@@ -270,7 +269,7 @@ class SCREEN {
     switch (this.config.mode) {
       case 0:
         /** disabled **/
-        log("Disabled mode")
+        this.log("Disabled mode")
         break
       case 1:
         /** vcgencmd **/
@@ -351,7 +350,7 @@ class SCREEN {
           }
           else {
             let responsePy = stdout.trim()
-            log("Response PY -- Check State: " + responsePy)
+            this.log("Response PY -- Check State: " + responsePy)
             if (responsePy == 1) actual = true
             this.resultDisplay(actual, wanted)
           }
@@ -366,7 +365,7 @@ class SCREEN {
           }
           else {
             let responsePy = stdout.trim()
-            log("Response PY -- Check State (reverse): " + responsePy)
+            this.log("Response PY -- Check State (reverse): " + responsePy)
             if (responsePy == 0) actual = true
             this.resultDisplay(actual, wanted)
           }
@@ -401,7 +400,7 @@ class SCREEN {
               this.screen.hdmiPort = responseSh.split(" ")[0]
               if (responseSh.split(" ")[3] == "(normal") power = "off"
               if (power == "on") actual = true
-              log(`[MODE 9] Monitor on ${this.screen.hdmiPort} is ${power}`)
+              this.log(`[MODE 9] Monitor on ${this.screen.hdmiPort} is ${power}`)
               this.resultDisplay(actual, wanted)
             }
           }
@@ -425,7 +424,7 @@ class SCREEN {
                   } else {
                     let wResponse = stdout.trim()
                     this.screen.hdmiPort = wResponse.split(" ")[0]
-                    log(`[MODE 10] Monitor on ${this.screen.hdmiPort} is ${actual}`)
+                    this.log(`[MODE 10] Monitor on ${this.screen.hdmiPort} is ${actual}`)
                     this.resultDisplay(actual, wanted)
                   }
                 })
@@ -445,7 +444,7 @@ class SCREEN {
               let responseSh = stdout.trim()
               var displaySh = responseSh.split("\n")[1].split(" ")[2]
               if (displaySh == "on") actual = true
-              if (displaySh == "unknown") log("HDMI CEC unknown state")
+              if (displaySh == "unknown") this.log("HDMI CEC unknown state")
               this.resultDisplay(actual, wanted)
             }
           })
@@ -460,7 +459,7 @@ class SCREEN {
               let responseSh = stdout.trim()
               var displaySh = responseSh.split("\n")[1].split(" ")[2]
               if (displaySh == "on") actual = true
-              if (displaySh == "unknown") log("HDMI CEC unknown state")
+              if (displaySh == "unknown") this.log("HDMI CEC unknown state")
               this.resultDisplay(actual, wanted)
             }
           })
@@ -471,11 +470,11 @@ class SCREEN {
 
   resultDisplay(actual, wanted) {
     if (this.screen.forceOnStart) {
-      log("Display: Force On Start")
+      this.log("Display: Force On Start")
       this.setPowerDisplay(true)
       this.screen.forceOnStart = false
     } else {
-      log("Display -- Actual: " + actual + " - Wanted: " + wanted)
+      this.log("Display -- Actual: " + actual + " - Wanted: " + wanted)
       this.screen.power = actual
       if (actual && !wanted) this.setPowerDisplay(false)
       if (!actual && wanted) this.setPowerDisplay(true)
@@ -483,7 +482,7 @@ class SCREEN {
   }
 
   async setPowerDisplay(set) {
-    log("Display " + (set ? "ON." : "OFF."))
+    this.log("Display " + (set ? "ON." : "OFF."))
     this.screen.power = set
     this.SendScreenPowerState()
     // and finally apply rules !
@@ -520,22 +519,22 @@ class SCREEN {
       case 6:
         if (set)
           exec("python monitor.py -r=1 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-            if (err) logError(err)
-            else log("Relay is " + stdout.trim())
+            if (err) this.logError(err)
+            else this.log("Relay is " + stdout.trim())
           })
         else
           if (this.config.clearGpioValue) {
             exec("python monitor.py -r=0 -c -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-              if (err) logError(err)
+              if (err) this.logError(err)
               else {
-                log("Relay is " + stdout.trim())
+                this.log("Relay is " + stdout.trim())
               }
             })
           } else {
             exec("python monitor.py -r=0 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-              if (err) logError(err)
+              if (err) this.logError(err)
               else {
-                log("Relay is " + stdout.trim())
+                this.log("Relay is " + stdout.trim())
               }
             })
           }
@@ -544,23 +543,23 @@ class SCREEN {
         if (set) {
           if (this.config.clearGpioValue) {
             exec("python monitor.py -r=0 -c -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-              if (err) logError(err)
+              if (err) this.logError(err)
               else {
-                log("Relay is " + stdout.trim())
+                this.log("Relay is " + stdout.trim())
               }
             })
           } else {
             exec("python monitor.py -r=0 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-              if (err) logError(err)
+              if (err) this.logError(err)
               else {
-                log("Relay is " + stdout.trim())
+                this.log("Relay is " + stdout.trim())
               }
             })
           }
         } else {
           exec("python monitor.py -r=1 -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
-            if (err) logError(err)
-            else log("Relay is " + stdout.trim())
+            if (err) this.logError(err)
+            else this.log("Relay is " + stdout.trim())
           })
         }
         break
@@ -584,7 +583,7 @@ class SCREEN {
           // Toggle GPIO to turn off display
           exec("python monitor.py -t -g=" + this.config.gpio, { cwd: this.PathScript }, (err, stdout, stderr) => {
             if (err) this.logError(err)
-            else log("Relay toggled: " + stdout.trim())
+            else this.log("Relay toggled: " + stdout.trim())
           })
         }
         break

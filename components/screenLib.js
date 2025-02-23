@@ -7,11 +7,6 @@ const moment = require('moment')
 const path = require('path')
 var log = (...args) => { /* do nothing */ }
 
-const exec = require('child_process').exec;
-const process = require('process');
-const moment = require('moment');
-const path = require('path');
-var log = (...args) => { /* do nothing */ };
 
 class SCREEN {
   constructor(config, callback) {

@@ -74,11 +74,9 @@ GPIO.setwarnings(False)
 
 # Setup GPIO based on mode
 if args.monitor or args.state:
-    GPIO.setup(
-        gpio, GPIO.IN, pull_up_down=GPIO.PUD_DOWN
-    )  # Input mode for monitoring/state
+    GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 else:
-    GPIO.setup(gpio, GPIO.OUT)  # Output mode for relay control
+    GPIO.setup(gpio, GPIO.OUT)
 
 if args.state:
     print(str(GPIO.input(gpio)))
@@ -97,33 +95,23 @@ if args.monitor:
         GPIO.cleanup()
         exit()
 
+if args.toggle:
+    # Simple toggle - just pulse the GPIO briefly
+    GPIO.output(gpio, GPIO.HIGH)
+    time.sleep(0.1)  # 100ms pulse
+    GPIO.output(gpio, GPIO.LOW)
+    print("Toggled")
+    if args.clean:
+        GPIO.cleanup()
+    exit()
 
-def monitor_on(pin):
-    GPIO.output(pin, GPIO.HIGH)
+# Regular relay control
+if args.relay == 1:
+    GPIO.output(gpio, GPIO.HIGH)
     print("ON")
-
-
-def monitor_off(pin):
-    GPIO.output(pin, GPIO.LOW)
+else:
+    GPIO.output(gpio, GPIO.LOW)
     print("OFF")
 
-
-def monitor_toggle(pin):
-    current_state = GPIO.input(pin)
-    GPIO.output(pin, not current_state)
-    print("TOGGLED to", "ON" if not current_state else "OFF")
-
-
-if __name__ == "__main__":
-    try:
-        if args.toggle:
-            monitor_toggle(gpio)
-        elif args.relay == 1:
-            monitor_on(gpio)
-        else:
-            monitor_off(gpio)
-
-        if args.clean:
-            GPIO.cleanup()
-    except KeyboardInterrupt:
-        GPIO.cleanup()
+if args.clean:
+    GPIO.cleanup()

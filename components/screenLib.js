@@ -100,18 +100,28 @@ class SCREEN {
 
   executeCECCommand(command) {
     return new Promise((resolve, reject) => {
-      // Create a process for cec-client
       const cec = spawn('cec-client', ['-s', '-d', '1'], {
         shell: true,
         env: { ...process.env, PATH: process.env.PATH }
       });
 
-      let output = '';
-      let error = '';
+      // Add timeout to prevent hanging processes
+      const timeout = setTimeout(() => {
+        cec.kill('SIGKILL');
+        reject(new Error('CEC command timed out'));
+      }, 5000);
 
-      // Write the command to stdin
       cec.stdin.write(command + '\n');
       cec.stdin.end();
+
+      // Add process cleanup
+      cec.on('exit', () => {
+        clearTimeout(timeout);
+        cec.removeAllListeners();
+      });
+
+      let output = '';
+      let error = '';
 
       cec.stdout.on('data', (data) => {
         output += data.toString();
@@ -489,10 +499,12 @@ class SCREEN {
           } else {
             await this.executeCECCommand('standby 0');
           }
+          // Forcefully clean up any remaining processes
+          exec('pkill -f "cec-client -s -d 1"');
         } catch (err) {
           this.logError(err);
         }
-        break
+        break;
       case 5:
         if (set) exec("xset dpms force on")
         else exec("xset dpms force off")

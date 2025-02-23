@@ -4,30 +4,6 @@
 *  10/2023      *
 *****************/
 
-var _logPIR = (...args) => { /* do nothing */ }
-
-const heapdump = require('heapdump');
-let lastHeapDump = Date.now();
-
-// Add this function to monitor memory
-function checkMemory() {
-  const used = process.memoryUsage();
-  console.log(`Memory usage: 
-    - heapTotal: ${Math.round(used.heapTotal / 1024 / 1024 * 100) / 100} MB
-    - heapUsed: ${Math.round(used.heapUsed / 1024 / 1024 * 100) / 100} MB
-    - rss: ${Math.round(used.rss / 1024 / 1024 * 100) / 100} MB`);
-
-  // Take a heap dump every 5 minutes if memory usage is high
-  if (used.heapUsed > 200 * 1024 * 1024 && // 200MB
-    Date.now() - lastHeapDump > 5 * 60 * 1000) { // 5 minutes
-    lastHeapDump = Date.now();
-    heapdump.writeSnapshot(`/tmp/mm-${Date.now()}.heapsnapshot`);
-  }
-}
-
-// Call checkMemory every minute
-setInterval(checkMemory, 60000);
-
 Module.register("MMM-Pir", {
   requiresVersion: "2.23.0",
   defaults: {

@@ -60,15 +60,15 @@ To display the module insert it in the config.js file.
  | debuf | enable or not debug mode | Boolean | false |
  | delay | Time before the mirror turns off the display if no user activity is detected. (in ms) | Number | 120000 |
  | turnOffDisplay | Should the display turn off after timeout? | Boolean | true |
- | mode | mode for turn on/off your screen (see bellow) | number | 1 |
+ | mode | mode for turn on/off your screen (see bellow) | number | 1 |
  | ecoMode | Should the MagicMirror hide all module after timeout ? | Boolean | true |
  | displayCounter | Should display Count-down in screen ? | Boolean | true |
  | displayBar| Should display Count-up bar in screen ? | Boolean | true |
  | displayStyle| Style of the Count-down. Available: "Text", "Line", "SemiCircle", "Circle", "Bar" | String | Text |
- | displayLastPresence| Display the date of the last user presence | Boolean | true |
+ | displayLastPresence| Display the date of the last user presence | Boolean | true |
  | lastPresenceTimeFormat| Change the date format (moment.js format) of the last presence | String | LL H:mm |
  | mode6_gpio| GPIO number for control the relay (mode 6 only) | Number | 20 |
- | mode6_clearGpioValue| reset GPIO value script of relay (mode 6 only) | Boolean | true |
+ | mode6_clearGpioValue| reset GPIO value script of relay (mode 6 only) | Boolean | true |
  | pir_gpio | BCM-number of the sensor pin | Number | 21 |
  | pir_reverseValue | Reverse sensor received value | Boolean | false |
  | xrandrForceRotation | **-mode 9 only-** Forces screen rotation according to the defined value (possible value: "normal", "left", "right", "inverted") | String | normal |

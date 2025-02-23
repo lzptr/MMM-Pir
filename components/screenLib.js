@@ -230,11 +230,19 @@ class SCREEN {
     this.interval = null
     this.screen.running = false
     this.start(true)
+    this.log("Timer reset due to motion")
   }
 
   wakeup() {
-    if (this.screen.locked || this.screen.running) return;
-    this.reset();
+    if (this.screen.locked) return;
+
+    if (this.screen.running) {
+      // If timer is already running, just reset it
+      this.reset();
+    } else {
+      // If timer is not running, start it
+      this.start();
+    }
   }
 
   lock() {
